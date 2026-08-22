@@ -13,10 +13,24 @@ def get_streamable_http_mcp_client() -> MCPClient:
     # to use an MCP server that supports bearer authentication, add headers={"Authorization": f"Bearer {access_token}"}
     return MCPClient(lambda: streamablehttp_client(EXAMPLE_MCP_ENDPOINT))
 
-def get_gateway_mcp_client() -> MCPClient | None:
+
+def get_gateway_mcp_client(auth_header: str) -> MCPClient | None:
     """Returns an MCP Client for AgentCore Gateway, if configured"""
-    url = os.environ.get("AGENTCORE_GATEWAY_MY_GATEWAY_URL")
+    url = os.environ.get("AGENTCORE_GATEWAY_MY_GATEWAY_SECURE_URL")
     if not url:
         logger.warning("Gateway URL not set — gateway tools unavailable")
         return None
-    return MCPClient(lambda: streamablehttp_client(url))
+    return MCPClient(lambda: streamablehttp_client(
+        url=url,
+        headers={"Authorization": auth_header}
+    ))
+
+
+# def get_gateway_mcp_client() -> MCPClient | None:
+#     """Returns an MCP Client for AgentCore Gateway, if configured"""
+#     url = os.environ.get("AGENTCORE_GATEWAY_MY_GATEWAY_URL")
+#     if not url:
+#         logger.warning("Gateway URL not set — gateway tools unavailable")
+#         return None
+#     return MCPClient(lambda: streamablehttp_client(url))
+
