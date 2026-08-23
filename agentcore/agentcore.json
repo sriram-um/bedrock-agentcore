@@ -53,7 +53,17 @@
     }
   ],
   "knowledgeBases": [],
-  "credentials": [],
+  "credentials": [
+    {
+      "authorizerType": "OAuthCredentialProvider",
+      "name": "gateway-egress-oauth",
+      "discoveryUrl": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_Hs4TfsgXV/.well-known/openid-configuration",
+      "scopes": [
+        "default-m2m-resource-server-095e5b40/read"
+      ],
+      "vendor": "CustomOauth2"
+    }
+  ],
   "evaluators": [],
   "onlineEvalConfigs": [
     {
@@ -81,6 +91,14 @@
             "lambdaArn": "arn:aws:lambda:us-east-1:979604986935:function:workshop-warranty-check",
             "toolSchemaFile": "app/CustomerSupport/tool/warranty_schema.json"
           }
+        },
+        {
+          "name": "ProcessRefund",
+          "targetType": "lambdaFunctionArn",
+          "lambdaFunctionArn": {
+            "lambdaArn": "arn:aws:lambda:us-east-1:979604986935:function:workshop-process-refund",
+            "toolSchemaFile": "app/CustomerSupport/tool/refund_schema.json"
+          }
         }
       ],
       "authorizerType": "CUSTOM_JWT",
@@ -94,7 +112,11 @@
         }
       },
       "enableSemanticSearch": true,
-      "exceptionLevel": "NONE"
+      "exceptionLevel": "NONE",
+      "policyEngineConfiguration": {
+        "policyEngineName": "CustomerSupportPolicyEngine",
+        "mode": "ENFORCE"
+      }
     }
   ],
   "unassignedTargets": [
@@ -107,10 +129,38 @@
       }
     }
   ],
-  "policyEngines": [],
+  "policyEngines": [
+    {
+      "name": "CustomerSupportPolicyEngine",
+      "description": "Governs customer support agent tool access — refund limits and tool permissions",
+      "policies": [
+        {
+          "name": "refund_limit_policy",
+          "description": "Allow refunds under 100 dollars only",
+          "statement": "permit(principal, action == AgentCore::Action::\"ProcessRefund___process_refund\", resource == AgentCore::Gateway::\"arn:aws:bedrock-agentcore:us-east-1:979604986935:gateway/customersupport-my-gateway-secure-9ptvptxjcw\") when { context.input.amount < 100 };",
+          "validationMode": "FAIL_ON_ANY_FINDINGS",
+          "enforcementMode": "ACTIVE",
+          "authorizationPhase": "INITIATE"
+        },
+        {
+          "name": "warranty_check_policy",
+          "description": "Allow all authenticated users to check warranties",
+          "statement": "permit(principal, action == AgentCore::Action::\"WarrantyCheck___check_warranty\", resource == AgentCore::Gateway::\"arn:aws:bedrock-agentcore:us-east-1:979604986935:gateway/customersupport-my-gateway-secure-9ptvptxjcw\") when { (principal is AgentCore::OAuthUser) };",
+          "validationMode": "IGNORE_ALL_FINDINGS",
+          "enforcementMode": "ACTIVE",
+          "authorizationPhase": "INITIATE"
+        }
+      ]
+    }
+  ],
   "configBundles": [],
   "abTests": [],
-  "harnesses": [],
+  "harnesses": [
+    {
+      "name": "OrderResearchAgent",
+      "path": "app/OrderResearchAgent"
+    }
+  ],
   "datasets": [],
   "payments": []
 }
